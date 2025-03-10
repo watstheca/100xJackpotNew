@@ -36,14 +36,6 @@ const App = () => {
   const TOKEN_ADDRESS = process.env.REACT_APP_TOKEN_ADDRESS || '0x0755fb9917419a08c90a0Fd245F119202844ec3D';
   const BONDING_CURVE_ADDRESS = process.env.REACT_APP_BONDING_CURVE_ADDRESS || '0x2ECA93adD34C533008b947B2Ed02e4974122D525';
 
-  // Predefined hints (stored off-chain)
-  const HINTS = [
-    "The secret is related to the Sonic blockchain.",
-    "The secret word is 'Sonic4Lyfe'.",
-    "The secret has 11 characters in total.",
-    "The secret includes both letters and a number."
-  ];
-
   // Format address for display
   const formatAddress = (address) => {
     if (!address || address === '0x0000000000000000000000000000000000000000') return 'None';
@@ -79,7 +71,24 @@ const App = () => {
       return '0';
     }
   };
-
+// Add this function to fetch hint content from the API
+const getHintContent = async (hintIndex, userAddress) => {
+  try {
+    const response = await fetch(`/.netlify/functions/getHint?hintIndex=${hintIndex}&userAddress=${userAddress}`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      return data.hintContent;
+    } else {
+      const error = await response.json();
+      console.error("Error fetching hint:", error);
+      return "Error retrieving hint";
+    }
+  } catch (error) {
+    console.error("Error connecting to hint API:", error);
+    return "Unable to connect to hint server";
+  }
+};
 // Updated loadPurchasedHints function
 const loadPurchasedHints = useCallback(async () => {
   if (!jackpotContract || !accounts[0]) return;
