@@ -1,4 +1,4 @@
-const ethers = require('ethers');
+const { ethers } = require('ethers');
 
 // JackpotGame ABI (only the function we need)
 const JACKPOT_ABI = [
@@ -48,7 +48,7 @@ exports.handler = async function(event, context) {
 
   try {
     // Initialize provider and contract
-    const provider = new ethers.JsonRpcProvider(process.env.SONIC_RPC_URL);
+    const provider = new ethers.providers.JsonRpcProvider(process.env.SONIC_RPC_URL);
     const jackpotContract = new ethers.Contract(
       process.env.JACKPOT_ADDRESS,
       JACKPOT_ABI,
