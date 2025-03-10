@@ -1,8 +1,7 @@
 [build]
+  command = "cd frontend && npm install --legacy-peer-deps && npm install react-scripts --save-dev && npm run build"
+  publish = "frontend/build"
   functions = "functions"
-
-[dev]
-  autoLaunch = false
 
 [[redirects]]
   from = "/api/*"
