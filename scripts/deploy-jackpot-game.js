@@ -76,7 +76,7 @@ async function main() {
   }
   
   // Fund the jackpot with some initial S
-  const initialFundingAmount = hre.ethers.parseEther("0.1"); // 0.1 S
+  const initialFundingAmount = hre.ethers.parseEther("1.0"); // 1.0 S
   console.log(`Funding jackpot with ${hre.ethers.formatEther(initialFundingAmount)} S...`);
   
   const txFund = await jackpotGame.fundJackpot({ value: initialFundingAmount });

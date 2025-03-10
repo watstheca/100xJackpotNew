@@ -40,8 +40,8 @@
       ]
     },
     "C:\\Users\\jdcju\\Desktop\\100xJackpotNew\\node_modules\\@openzeppelin\\contracts\\token\\ERC20\\ERC20.sol": {
-      "lastModificationDate": 1741539763689,
-      "contentHash": "c6375ef25e84c90b3d15f9ec4eef218f",
+      "lastModificationDate": 1741581468181,
+      "contentHash": "227a6eb2225701c12d9c959b758b6333",
       "sourceName": "@openzeppelin/contracts/token/ERC20/ERC20.sol",
       "solcConfig": {
         "version": "0.8.28",
@@ -81,8 +81,8 @@
       ]
     },
     "C:\\Users\\jdcju\\Desktop\\100xJackpotNew\\node_modules\\@openzeppelin\\contracts\\token\\ERC20\\IERC20.sol": {
-      "lastModificationDate": 1741539763750,
-      "contentHash": "5517c8678c18eb1a8ba58810e7ca39ca",
+      "lastModificationDate": 1741581468343,
+      "contentHash": "8f19f64d2adadf448840908bbaf431c8",
       "sourceName": "@openzeppelin/contracts/token/ERC20/IERC20.sol",
       "solcConfig": {
         "version": "0.8.28",
@@ -117,8 +117,8 @@
       ]
     },
     "C:\\Users\\jdcju\\Desktop\\100xJackpotNew\\node_modules\\@openzeppelin\\contracts\\interfaces\\draft-IERC6093.sol": {
-      "lastModificationDate": 1741539763670,
-      "contentHash": "4aefc698f77ecbace7f401257dfe182d",
+      "lastModificationDate": 1741581468038,
+      "contentHash": "267d92fe4de67b1bdb3302c08f387dbf",
       "sourceName": "@openzeppelin/contracts/interfaces/draft-IERC6093.sol",
       "solcConfig": {
         "version": "0.8.28",
@@ -155,8 +155,8 @@
       ]
     },
     "C:\\Users\\jdcju\\Desktop\\100xJackpotNew\\node_modules\\@openzeppelin\\contracts\\utils\\Context.sol": {
-      "lastModificationDate": 1741539763666,
-      "contentHash": "01c847e2af51f468cb66d9ed83bc3cec",
+      "lastModificationDate": 1741581468007,
+      "contentHash": "67bfbc07588eb8683b3fd8f6f909563e",
       "sourceName": "@openzeppelin/contracts/utils/Context.sol",
       "solcConfig": {
         "version": "0.8.28",
@@ -191,8 +191,8 @@
       ]
     },
     "C:\\Users\\jdcju\\Desktop\\100xJackpotNew\\node_modules\\@openzeppelin\\contracts\\token\\ERC20\\extensions\\IERC20Metadata.sol": {
-      "lastModificationDate": 1741539763753,
-      "contentHash": "4c02fa6f7ae7b6c289cef80424f0c875",
+      "lastModificationDate": 1741581468346,
+      "contentHash": "794db3115001aa372c79326fcfd44b1f",
       "sourceName": "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol",
       "solcConfig": {
         "version": "0.8.28",
@@ -270,7 +270,7 @@
       ]
     },
     "C:\\Users\\jdcju\\Desktop\\100xJackpotNew\\node_modules\\@openzeppelin\\contracts\\access\\Ownable.sol": {
-      "lastModificationDate": 1741539763784,
+      "lastModificationDate": 1741581468412,
       "contentHash": "d3c790edc9ccf808a17c5a6cd13614fd",
       "sourceName": "@openzeppelin/contracts/access/Ownable.sol",
       "solcConfig": {
@@ -308,8 +308,8 @@
       ]
     },
     "C:\\Users\\jdcju\\Desktop\\100xJackpotNew\\node_modules\\@openzeppelin\\contracts\\utils\\ReentrancyGuard.sol": {
-      "lastModificationDate": 1741539763789,
-      "contentHash": "a92331adac11b453a4de0323fc948119",
+      "lastModificationDate": 1741581468432,
+      "contentHash": "190613e556d509d9e9a0ea43dc5d891d",
       "sourceName": "@openzeppelin/contracts/utils/ReentrancyGuard.sol",
       "solcConfig": {
         "version": "0.8.28",
@@ -344,8 +344,8 @@
       ]
     },
     "C:\\Users\\jdcju\\Desktop\\100xJackpotNew\\contracts\\JackpotGame.sol": {
-      "lastModificationDate": 1741540817701,
-      "contentHash": "dce3c6c78e983429d75b9f05b6cfa094",
+      "lastModificationDate": 1741586792311,
+      "contentHash": "9694f894eb56bfcbdb493ad72b068356",
       "sourceName": "contracts/JackpotGame.sol",
       "solcConfig": {
         "version": "0.8.28",
@@ -382,11 +382,12 @@
       ],
       "artifacts": [
         "IBondingCurve",
+        "IToken100x",
         "JackpotGame"
       ]
     },
     "C:\\Users\\jdcju\\Desktop\\100xJackpotNew\\node_modules\\@openzeppelin\\contracts\\utils\\Pausable.sol": {
-      "lastModificationDate": 1741539763784,
+      "lastModificationDate": 1741581468425,
       "contentHash": "24e52f6ef3868e6fca664a423140bee9",
       "sourceName": "@openzeppelin/contracts/utils/Pausable.sol",
       "solcConfig": {
@@ -424,7 +425,7 @@
       ]
     },
     "C:\\Users\\jdcju\\Desktop\\100xJackpotNew\\node_modules\\@openzeppelin\\contracts\\access\\AccessControl.sol": {
-      "lastModificationDate": 1741539763637,
+      "lastModificationDate": 1741581467952,
       "contentHash": "4c80b7fdf559a9a348e832a57d072a0b",
       "sourceName": "@openzeppelin/contracts/access/AccessControl.sol",
       "solcConfig": {
@@ -464,8 +465,8 @@
       ]
     },
     "C:\\Users\\jdcju\\Desktop\\100xJackpotNew\\node_modules\\@openzeppelin\\contracts\\utils\\introspection\\ERC165.sol": {
-      "lastModificationDate": 1741539763682,
-      "contentHash": "6a55c353946e471d9792965d06208295",
+      "lastModificationDate": 1741581468124,
+      "contentHash": "7c03c1e37c3dc24eafb76dc2b8a5c3a6",
       "sourceName": "@openzeppelin/contracts/utils/introspection/ERC165.sol",
       "solcConfig": {
         "version": "0.8.28",
@@ -502,8 +503,8 @@
       ]
     },
     "C:\\Users\\jdcju\\Desktop\\100xJackpotNew\\node_modules\\@openzeppelin\\contracts\\access\\IAccessControl.sol": {
-      "lastModificationDate": 1741539763728,
-      "contentHash": "e3a14b0714caaaa82d58fa0bc3756079",
+      "lastModificationDate": 1741581468297,
+      "contentHash": "6f7fac9fa0df6004375e18b7ff7edf4e",
       "sourceName": "@openzeppelin/contracts/access/IAccessControl.sol",
       "solcConfig": {
         "version": "0.8.28",
@@ -538,8 +539,8 @@
       ]
     },
     "C:\\Users\\jdcju\\Desktop\\100xJackpotNew\\node_modules\\@openzeppelin\\contracts\\utils\\introspection\\IERC165.sol": {
-      "lastModificationDate": 1741539763746,
-      "contentHash": "de0163561b417b800d01749cbbe2147e",
+      "lastModificationDate": 1741581468334,
+      "contentHash": "bf0119eb2a570f219729ff38b6cd1df8",
       "sourceName": "@openzeppelin/contracts/utils/introspection/IERC165.sol",
       "solcConfig": {
         "version": "0.8.28",
@@ -574,8 +575,8 @@
       ]
     },
     "C:\\Users\\jdcju\\Desktop\\100xJackpotNew\\contracts\\BondingCurve.sol": {
-      "lastModificationDate": 1741535943923,
-      "contentHash": "3d5281d95ce62718a5d53e9e6277f8de",
+      "lastModificationDate": 1741586528423,
+      "contentHash": "0efaf6edbe7f6139ebcea0131c36c182",
       "sourceName": "contracts/BondingCurve.sol",
       "solcConfig": {
         "version": "0.8.28",
@@ -612,7 +613,8 @@
       ],
       "artifacts": [
         "BondingCurve",
-        "ILiquidityPoolFactory"
+        "ILiquidityPoolFactory",
+        "SimpleLiquidityPool"
       ]
     }
   }

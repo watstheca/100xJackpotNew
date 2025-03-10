@@ -11,6 +11,12 @@ interface ILiquidityPoolFactory {
     function createPoolWithExistingTokens(address _token, uint256 _tokenAmount) external payable returns (address pool);
 }
 
+interface SimpleLiquidityPool {
+    function swapTokenToS(uint256 tokenAmount) external returns (uint256);
+    function getLpBalance(address user) external view returns (uint256);
+    function removeLiquidity(uint256 lpAmount) external returns (uint256 tokenAmount, uint256 sAmount);
+}
+
 /**
  * @title BondingCurve
  * @dev Implements a bonding curve for 100X token with configurable pricing parameters
@@ -81,7 +87,7 @@ contract BondingCurve is ReentrancyGuard, Ownable, Pausable {
         currentSUsdPrice = 50; // $0.50
         
         jackpotAddress = msg.sender;
-        require(token100x.transferFrom(msg.sender, address(this), 110_000_000 * 10**6), "Seed transfer failed");
+        require(token100x.transferFrom(msg.sender, address(this), 200_000_000 * 10**6), "Seed transfer failed");
         _pause();
     }
 
@@ -264,46 +270,61 @@ contract BondingCurve is ReentrancyGuard, Ownable, Pausable {
      * @dev Sell tokens
      * @param tokenAmount Amount of tokens to sell (in base units)
      */
-    function sell(uint256 tokenAmount) external whenNotPaused nonReentrant {
-        require(tokenAmount > 0, "Amount must be greater than 0");
-        require(tokenAmount <= MAX_TOKEN_AMOUNT_PER_TX, "Amount too large");
-        
-        // If liquidity pool is active, redirect to pool
-        if (liquidityPoolCreated && liquidityPool != address(0)) {
-            revert("Bonding curve closed, use liquidity pool");
-        }
-        
-        // Calculate the sell price
-        uint256 totalValue = calculateSellPrice(tokenAmount);
-        
-        // Calculate fees
-        uint256 fee = totalValue * sellFee / 10000;
-        uint256 jackpotShare = fee / 2; // 2.5%
-        uint256 poolShare = fee - jackpotShare; // 2.5%
-        uint256 totalReceived = totalValue - fee;
-        
-        require(poolS >= totalReceived + poolShare, "Insufficient pool S");
-        require(address(this).balance >= totalReceived + jackpotShare, "Insufficient S balance");
-
-        // Transfer tokens from seller to the contract
+    function sell(uint256 tokenAmount) external whenNotPaused nonReentrant returns (uint256) {
+    require(tokenAmount > 0, "Amount must be greater than 0");
+    require(tokenAmount <= MAX_TOKEN_AMOUNT_PER_TX, "Amount too large");
+    
+    // If liquidity pool is active, proxy to pool
+    if (liquidityPoolCreated && liquidityPool != address(0)) {
+        // First get approval from sender to pool
         token100x.transferFrom(msg.sender, address(this), tokenAmount * 10**6);
-        totalSoldBack += tokenAmount * 10**6;
-        poolS = poolS + poolShare - totalReceived;
         
-        // Transfer S to the seller and jackpot
-        payable(msg.sender).transfer(totalReceived);
-        (bool success, ) = jackpotAddress.call{value: jackpotShare}(
-        abi.encodeWithSignature("fundJackpot()")
-        );
-        require(success, "Jackpot funding failed");
+        // Then approve tokens to liquidity pool
+        token100x.approve(liquidityPool, tokenAmount * 10**6);
         
-        emit Sell(msg.sender, tokenAmount, totalReceived);
+        // Call the swap function and forward the result
+        uint256 received = SimpleLiquidityPool(liquidityPool).swapTokenToS(tokenAmount * 10**6);
         
-        // Check if threshold reached
-        if (totalBought - totalSoldBack >= THRESHOLD) {
-            _handleThresholdReached();
-        }
+        // Send S back to the original caller
+        payable(msg.sender).transfer(received);
+        
+        emit Sell(msg.sender, tokenAmount, received);
+        return received;
     }
+    
+    // Regular bonding curve sell logic follows...
+    uint256 totalValue = calculateSellPrice(tokenAmount);
+    
+    // Calculate fees
+    uint256 fee = totalValue * sellFee / 10000;
+    uint256 jackpotShare = fee / 2; // 2.5%
+    uint256 poolShare = fee - jackpotShare; // 2.5%
+    uint256 totalReceived = totalValue - fee;
+    
+    require(poolS >= totalReceived + poolShare, "Insufficient pool S");
+    require(address(this).balance >= totalReceived + jackpotShare, "Insufficient S balance");
+
+    // Transfer tokens from seller to the contract
+    token100x.transferFrom(msg.sender, address(this), tokenAmount * 10**6);
+    totalSoldBack += tokenAmount * 10**6;
+    poolS = poolS + poolShare - totalReceived;
+    
+    // Transfer S to the seller and jackpot
+    payable(msg.sender).transfer(totalReceived);
+    (bool success, ) = jackpotAddress.call{value: jackpotShare}(
+    abi.encodeWithSignature("fundJackpot()")
+    );
+    require(success, "Jackpot funding failed");
+    
+    emit Sell(msg.sender, tokenAmount, totalReceived);
+    
+    // Check if threshold reached
+    if (totalBought - totalSoldBack >= THRESHOLD) {
+        _handleThresholdReached();
+    }
+    
+    return totalReceived;
+}
 
     /**
      * @dev Handle reaching the token threshold
@@ -490,6 +511,34 @@ function getPoolInfo() external view returns (uint256 accountingS, uint256 actua
     return (poolS, address(this).balance, token100x.balanceOf(address(this)));
 }
 
+/**
+ * @dev Allows owner to withdraw LP tokens in case of emergency without timelock
+ * @param _recipient Address to receive the LP tokens
+ */
+function emergencyWithdrawLpTokens(address _recipient) external onlyOwner nonReentrant {
+    require(_recipient != address(0), "Invalid recipient address");
+    require(liquidityPoolCreated && liquidityPool != address(0), "No liquidity pool created");
+    
+    // Get LP token balance from the factory (initial liquidity provider)
+    uint256 lpBalance = SimpleLiquidityPool(liquidityPool).getLpBalance(address(this));
+    require(lpBalance > 0, "No LP tokens to withdraw");
+    
+    // Create a new interface for just the LP token functionality we need
+    SimpleLiquidityPool pool = SimpleLiquidityPool(liquidityPool);
+    
+    // Remove liquidity
+    (uint256 tokenAmount, uint256 sAmount) = pool.removeLiquidity(lpBalance);
+    
+    // Transfer assets to recipient
+    if (tokenAmount > 0) {
+        require(token100x.transfer(_recipient, tokenAmount), "Token transfer failed");
+    }
+    if (sAmount > 0) {
+        payable(_recipient).transfer(sAmount);
+    }
+    
+    emit FullTimelockWithdrawExecuted(tokenAmount, sAmount);
+}
     /**
      * @dev Get current supply statistics
      * @return totalSupply Total supply cap

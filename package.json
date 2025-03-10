@@ -1,35 +1,20 @@
 {
-  "name": "100x-jackpot-frontend",
-  "version": "0.1.0",
-  "private": true,
-  "dependencies": {
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "react-scripts": "^5.0.1",
-    "web3": "^1.10.4",
-    "ethers": "^5.7.2"
-  },
+  "name": "100x-jackpot",
+  "version": "1.0.0",
+  "description": "100X Jackpot Game on Sonic Chain",
+  "main": "hardhat.config.js",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "CI=false react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "deploy:token": "hardhat run scripts/deploy-token.js --network sonicTestnet",
+    "deploy:bonding": "hardhat run scripts/deploy-bonding-curve.js --network sonicTestnet",
+    "deploy:factory": "hardhat run scripts/deploy-liquidity-factory.js --network sonicTestnet",
+    "deploy:jackpot": "hardhat run scripts/deploy-jackpot-game.js --network sonicTestnet"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app"
-    ]
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.0"
   },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.2",
+    "dotenv": "^16.4.5"
   }
 }

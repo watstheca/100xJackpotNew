@@ -11,6 +11,10 @@ interface IBondingCurve {
     function getPoolInfo() external view returns (uint256 accountingS, uint256 actualS, uint256 tokenBalance);
 }
 
+interface IToken100x {
+    function burn(uint256 amount) external;
+}
+
 /**
  * @title JackpotGame
  * @dev Optimized jackpot guessing game with DeFAI integration
@@ -218,39 +222,102 @@ contract JackpotGame is AccessControl, ReentrancyGuard, Pausable {
     }
 
     function _processBatch() internal {
-        if (accumulated100X == 0) return;
+    if (accumulated100X == 0) return;
 
-        uint256 total100X = accumulated100X;
-        accumulated100X = 0;
+    uint256 total100X = accumulated100X;
+    accumulated100X = 0;
 
-        uint256 burnAmount = (total100X * burnPercent) / 100;
-        uint256 toSell = total100X - burnAmount;
-        uint256 sReceived;
+    uint256 burnAmount = (total100X * burnPercent) / 100;
+    uint256 toSell = total100X - burnAmount;
+    uint256 sReceived;
 
-        if (burnAmount > 0) {
-            gameToken.transfer(address(0xdead), burnAmount);
-        }
-
-        if (toSell > 0) {
-            gameToken.approve(address(bondingCurve), toSell);
-            sReceived = bondingCurve.sell(toSell);
-        }
-
-        uint256 totalNonBurnPercent = jackpotPercent + nextJackpotPercent + marketingPercent;
-        uint256 jackpotShare = (sReceived * jackpotPercent) / totalNonBurnPercent;
-        uint256 nextJackpotShare = (sReceived * nextJackpotPercent) / totalNonBurnPercent;
-        uint256 marketingShare = (sReceived * marketingPercent) / totalNonBurnPercent;
-
-        jackpotAmount += jackpotShare;
-        nextJackpotAmount += nextJackpotShare;
-        
-        if (marketingShare > 0) {
-            (bool sent, ) = marketingWallet.call{value: marketingShare}("");
-            require(sent, "Marketing transfer failed");
-        }
-
-        lastBatchTime = block.timestamp;
+    if (burnAmount > 0) {
+        // Instead of sending to dead address, use the token's burn function
+        // gameToken.transfer(address(0xdead), burnAmount);
+        IToken100x(address(gameToken)).burn(burnAmount);
     }
+
+    if (toSell > 0) {
+        gameToken.approve(address(bondingCurve), toSell);
+        sReceived = bondingCurve.sell(toSell);
+    }
+
+    uint256 totalNonBurnPercent = jackpotPercent + nextJackpotPercent + marketingPercent;
+    uint256 jackpotShare = (sReceived * jackpotPercent) / totalNonBurnPercent;
+    uint256 nextJackpotShare = (sReceived * nextJackpotPercent) / totalNonBurnPercent;
+    uint256 marketingShare = (sReceived * marketingPercent) / totalNonBurnPercent;
+
+    jackpotAmount += jackpotShare;
+    nextJackpotAmount += nextJackpotShare;
+    
+    if (marketingShare > 0) {
+        (bool sent, ) = marketingWallet.call{value: marketingShare}("");
+        require(sent, "Marketing transfer failed");
+    }
+
+    lastBatchTime = block.timestamp;
+}
+
+function setBatchInterval(uint256 _interval) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
+    batchInterval = _interval;
+}
+
+/**
+ * @dev Allows admin to withdraw tokens and S from the contract in case of emergency
+ * @param _token Address of token to withdraw (use address(0) for S)
+ * @param _to Recipient address
+ * @param _amount Amount to withdraw
+ */
+function emergencyWithdraw(
+    address _token,
+    address _to,
+    uint256 _amount
+) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    require(_to != address(0), "Invalid recipient");
+    require(_amount > 0, "Invalid amount");
+    
+    if (_token == address(0)) {
+        // Withdraw S (native currency)
+        require(_amount <= address(this).balance, "Insufficient S balance");
+        
+        // Keep track of any affected balances
+        if (_amount > jackpotAmount + nextJackpotAmount) {
+            // If trying to withdraw more than jackpot balances,
+            // reset jackpot amounts to zero
+            jackpotAmount = 0;
+            nextJackpotAmount = 0;
+        } else {
+            // First, drain nextJackpotAmount
+            if (_amount <= nextJackpotAmount) {
+                nextJackpotAmount -= _amount;
+            } else {
+                uint256 remainingAmount = _amount - nextJackpotAmount;
+                nextJackpotAmount = 0;
+                jackpotAmount -= remainingAmount;
+            }
+        }
+        
+        // Send S to recipient
+        (bool sent, ) = _to.call{value: _amount}("");
+        require(sent, "S transfer failed");
+    } else {
+        // Withdraw ERC20 tokens
+        require(_token == address(gameToken), "Only game token can be withdrawn");
+        
+        // If withdrawing game tokens, reset accumulated tokens
+        if (_amount >= accumulated100X) {
+            accumulated100X = 0;
+        } else {
+            accumulated100X -= _amount;
+        }
+        
+        // Transfer tokens to recipient
+        IERC20(_token).transfer(_to, _amount);
+    }
+    
+    // Let everyone know an emergency withdrawal occurred
+    emit SocialAnnouncement("EMERGENCY_WITHDRAWAL", "Emergency funds withdrawal executed by admin");
+}
 
     function updateSplit(uint256 _burn, uint256 _jackpot, uint256 _next, uint256 _marketing) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
         require(_burn + _jackpot + _next + _marketing == 100, "Must sum to 100");

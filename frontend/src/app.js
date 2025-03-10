@@ -122,7 +122,16 @@ const loadPurchasedHints = useCallback(async () => {
   const loadContractData = useCallback(async (web3, jackpot, token, bondingCurve, account) => {
     try {
       setIsLoading(true);
+          
+    // Save the current message if it's important (contains certain keywords)
+    const currentMessage = statusMessage;
+    const isImportantMessage = currentMessage.includes('CONGRATULATIONS') || 
+                              currentMessage.includes('correct') ||
+                              currentMessage.includes('incorrect');
+    
+    if (!isImportantMessage) {
       setStatusMessage('Loading contract data...');
+    }
   
       // Use Promise.all for concurrent calls
       const [
@@ -169,15 +178,18 @@ const loadPurchasedHints = useCallback(async () => {
       } catch (err) {
         console.warn("Bonding curve data fetch failed:", err);
       }
-  
-      setStatusMessage('');
+      if (isImportantMessage) {
+        setStatusMessage(currentMessage);
+      } else {
+        setStatusMessage('');
+      }
     } catch (error) {
       console.error("Contract data loading error:", error);
       setStatusMessage('Error loading data. Check connection.');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, []); // Add statusMessage as dependency
 
   const buyTokens = async () => {
     if (!bondingCurveContract || !web3 || !accounts[0] || !numTokens) {
@@ -331,18 +343,6 @@ const loadPurchasedHints = useCallback(async () => {
     }
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const calculateGuessChance = useCallback(async () => {
-    if (!jackpotContract || !web3 || !accounts[0] || !currentGuess) return;
-    
-    try {
-      const chance = await jackpotContract.methods.calculateGuessChance(currentGuess).call();
-      setGuessChance(chance / 100 + '%');
-    } catch (error) {
-      console.error("Error calculating guess chance:", error);
-      setGuessChance('0%');
-    }
-  }, [jackpotContract, web3, accounts, currentGuess]);
 
   const makeGuess = async () => {
     if (!jackpotContract || !web3 || !accounts[0] || !currentGuess) {
@@ -352,45 +352,66 @@ const loadPurchasedHints = useCallback(async () => {
     
     try {
       setIsLoading(true);
-      setStatusMessage('Submitting guess... Please confirm in your wallet');
+      setStatusMessage('Preparing to make a guess...');
       
-      // Check if token is approved
-      const allowance = await tokenContract.methods.allowance(accounts[0], JACKPOT_ADDRESS).call();
+      // First approve the tokens
       const guessCostWei = await jackpotContract.methods.guessCost().call();
       
-      if (parseInt(allowance) < parseInt(guessCostWei)) {
-        // Approve tokens
-        setStatusMessage('Approving tokens for guess... Please confirm in your wallet');
-        await tokenContract.methods.approve(JACKPOT_ADDRESS, guessCostWei).send({
-          from: accounts[0]
-        });
-      }
-      
-      // Make guess in a single step
-      setStatusMessage('Checking your guess... Please confirm in your wallet');
-      const result = await jackpotContract.methods.singleStepGuess(currentGuess).send({
+      setStatusMessage('Approving tokens for guess... Please confirm in MetaMask');
+      await tokenContract.methods.approve(JACKPOT_ADDRESS, guessCostWei).send({
         from: accounts[0]
       });
       
-      // Check if user won from transaction events
-      let won = false;
-      if (result.events && result.events.GuessRevealed) {
-        won = result.events.GuessRevealed.returnValues.won;
+      setStatusMessage('Submitting guess... Please confirm in MetaMask');
+      
+      // Submit the guess
+      const tx = await jackpotContract.methods.singleStepGuess(currentGuess).send({
+        from: accounts[0]
+      });
+      
+      console.log("Transaction result:", tx);
+      
+      // Check if there are any events indicating success
+      let isWinner = false;
+      
+      // Look for any GuessRevealed events
+      if (tx.events) {
+        const events = Object.values(tx.events);
+        for (const event of events) {
+          console.log("Event found:", event.event, event.returnValues);
+          
+          if (event.event === "JackpotWon") {
+            isWinner = true;
+            break;
+          }
+          
+          if (event.event === "GuessRevealed" && event.returnValues && event.returnValues.won === true) {
+            isWinner = true;
+            break;
+          }
+        }
       }
       
-      if (won) {
-        setStatusMessage('🎉 Congratulations! Your guess was correct and you won the jackpot! 🎉');
-      } else {
-        setStatusMessage('Sorry, your guess was incorrect. Try again with another guess!');
-      }
+      // Set the appropriate message
+      const resultMessage = isWinner
+        ? '🎉 CONGRATULATIONS! Your guess was correct! You won the jackpot! 🎉'
+        : 'Sorry, your guess was incorrect. Try again!';
       
-      // Reload contract data after guess
-      await loadContractData(web3, jackpotContract, tokenContract, bondingCurveContract, accounts[0]);
-      setCurrentGuess('');
+      setStatusMessage(resultMessage);
       setIsLoading(false);
+      
+      // Keep the message for 15 seconds before refreshing data
+      setTimeout(async () => {
+        if (setStatusMessage) { // Check if component is still mounted
+          await loadContractData(web3, jackpotContract, tokenContract, bondingCurveContract, accounts[0]);
+          // Keep the message even after loading data
+          setStatusMessage(resultMessage);
+        }
+      }, 15000);
+      
     } catch (error) {
       console.error("Error making guess:", error);
-      setStatusMessage('Error making guess. Please try again.');
+      setStatusMessage('Error submitting guess. Please try again.');
       setIsLoading(false);
     }
   };
@@ -467,9 +488,9 @@ useEffect(() => {
 
   useEffect(() => {
     if (currentGuess && jackpotContract && web3 && accounts[0]) {
-      calculateGuessChance();
+      
     }
-  }, [currentGuess, jackpotContract, web3, accounts, calculateGuessChance]);
+  }, [currentGuess, jackpotContract, web3, accounts]);
 
   useEffect(() => {
     if (jackpotContract && accounts.length > 0) {
@@ -505,7 +526,7 @@ useEffect(() => {
               value={currentGuess} 
               onChange={(e) => setCurrentGuess(e.target.value)}
             />
-            <p className="guess-chance">Guess Chance: {guessChance}</p>
+            <p className="guess-chance">Type your guess carefully, letter case matters!</p>
             <button 
               className="action-button make-guess-button" 
               onClick={makeGuess}

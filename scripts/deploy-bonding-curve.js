@@ -33,8 +33,8 @@ async function main() {
   console.log("Predicted BondingCurve address:", predictedAddress);
   
   // Approve the predicted BondingCurve address to spend tokens
-  const seedAmount = BigInt(110_000_000) * BigInt(10**6); // 110M 100X tokens (with 6 decimals)
-  console.log("Approving transfer of 110M tokens to the BondingCurve...");
+  const seedAmount = BigInt(200_000_000) * BigInt(10**6); // 200M 100X tokens (with 6 decimals)
+  console.log("Approving transfer of 200M tokens to the BondingCurve...");
   
   const approveTx = await token100x.approve(predictedAddress, seedAmount);
   await approveTx.wait();
