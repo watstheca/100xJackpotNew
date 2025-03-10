@@ -13,7 +13,7 @@ const App = () => {
   const [jackpotContract, setJackpotContract] = useState(null);
   const [tokenContract, setTokenContract] = useState(null);
   const [bondingCurveContract, setBondingCurveContract] = useState(null);
-  
+  const [hintsLoaded, setHintsLoaded] = useState({});
   const [currentGuess, setCurrentGuess] = useState('');
   const [jackpotValue, setJackpotValue] = useState('0');
   const [hintValue, setHintValue] = useState('');
@@ -135,7 +135,7 @@ const loadPurchasedHints = useCallback(async () => {
     setHintValue(hintsData[purchased[purchased.length - 1]] || "No hints available");
     
     // Store hints for UI rendering
-    setHintsLoaded(hintsData);
+    setHintsLoaded(prevHints => ({ ...prevHints, ...hintsData }));
   } catch (error) {
     console.error("Comprehensive error loading purchased hints:", error);
   }
@@ -454,7 +454,7 @@ const renderHintHistory = () => {
         {purchasedHints.map(index => (
           <li key={index} className="hint-item">
             <span className="hint-number">Hint #{index + 1}:</span> 
-            {hintsLoaded[index] || "Loading..."}
+            {hintsLoaded?.[index] || "Loading..."}
           </li>
         ))}
       </ul>
