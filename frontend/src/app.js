@@ -16,7 +16,6 @@ const App = () => {
   const [hintsLoaded, setHintsLoaded] = useState({});
   const [currentGuess, setCurrentGuess] = useState('');
   const [jackpotValue, setJackpotValue] = useState('0');
-  const [hintValue, setHintValue] = useState('');
   const [liquidityValue, setLiquidityValue] = useState('0');
   const [tokenPrice, setTokenPrice] = useState('0');
   const [numTokens, setNumTokens] = useState('1');
@@ -132,7 +131,6 @@ const loadPurchasedHints = useCallback(async () => {
     console.log('Hints data:', hintsData);
 
     setPurchasedHints(purchased);
-    setHintValue(hintsData[purchased[purchased.length - 1]] || "No hints available");
     
     // Store hints for UI rendering
     setHintsLoaded(prevHints => ({ ...prevHints, ...hintsData }));
@@ -345,7 +343,6 @@ const loadPurchasedHints = useCallback(async () => {
       if (hasAccess) {
         // Fetch hint from API
         const hint = await getHintContent(hintIndex, accounts[0]);
-        setHintValue(hint);
         
         // Cache in localStorage for offline access
         if (hint && !hint.startsWith("Error") && !hint.startsWith("Unable")) {
