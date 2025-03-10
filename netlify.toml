@@ -1,8 +1,8 @@
 [build]
   base = "frontend"
   command = "npm ci && npm run build"
-  publish = "build"  # Remove 'frontend/' prefix
-  functions = "netlify/functions"
+  publish = "build" 
+  functions = "functions"
 
 [[redirects]]
   from = "/api/*"

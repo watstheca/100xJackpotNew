@@ -10,11 +10,12 @@
     "deploy:jackpot": "hardhat run scripts/deploy-jackpot-game.js --network sonicTestnet"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.0.0"
+    "@openzeppelin/contracts": "^5.0.0",
+    "ethers": "^6.13.5"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "hardhat": "^2.22.2",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.2"
   }
 }
