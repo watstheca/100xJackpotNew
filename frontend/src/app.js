@@ -72,48 +72,75 @@ const App = () => {
 // Add this function to fetch hint content from the API
 const getHintContent = useCallback(async (hintIndex, userAddress) => {
   try {
+    console.log('Fetching hint:', { hintIndex, userAddress }); // Added detailed logging
+    
     const response = await fetch(`/.netlify/functions/getHint?hintIndex=${hintIndex}&userAddress=${userAddress}`);
+    
+    console.log('Response status:', response.status); // Added response status logging
     
     if (response.ok) {
       const data = await response.json();
+      console.log('Hint data:', data); // Added data logging
       return data.hintContent;
     } else {
-      const error = await response.json();
-      console.error("Error fetching hint:", error);
+      const error = await response.text(); // Changed to .text() to capture more error details
+      console.error("Error fetching hint. Response:", error);
       return "Error retrieving hint";
     }
   } catch (error) {
-    console.error("Error connecting to hint API:", error);
+    console.error("Network error fetching hint:", error);
     return "Unable to connect to hint server";
   }
-}, []); // Empty dependency array since it doesn't depend on external variables
+}, []);
+
 // Updated loadPurchasedHints function
 const loadPurchasedHints = useCallback(async () => {
-  if (!jackpotContract || !accounts[0]) return;
+  if (!jackpotContract || !accounts[0]) {
+    console.log('Skipping hint load: No contract or account'); // Added log
+    return;
+  }
   
   try {
+    console.log('Loading purchased hints for account:', accounts[0]); // Added log
+    
     const hintTotal = parseInt(await jackpotContract.methods.hintCount().call());
+    console.log('Total hints available:', hintTotal); // Added log
+    
     let purchased = [];
     
     // Concurrent hint access checks
     const hintAccessPromises = Array.from({length: hintTotal}, async (_, i) => {
-      const hasAccess = await jackpotContract.methods.hasAccessToHint(accounts[0], i).call();
-      return hasAccess ? i : null;
+      try {
+        const hasAccess = await jackpotContract.methods.hasAccessToHint(accounts[0], i).call();
+        console.log(`Hint ${i} access:`, hasAccess); // Added detailed log
+        return hasAccess ? i : null;
+      } catch (accessError) {
+        console.error(`Error checking access for hint ${i}:`, accessError);
+        return null;
+      }
     });
     
     const hintAccess = await Promise.all(hintAccessPromises);
     
     purchased = hintAccess.filter(index => index !== null);
+    console.log('Purchased hint indices:', purchased); // Added log
+    
     setPurchasedHints(purchased);
     
     // Set most recent hint if available
     if (purchased.length > 0) {
       const latestHintIndex = purchased[purchased.length - 1];
+      console.log('Fetching latest hint index:', latestHintIndex); // Added log
+      
       const hint = await getHintContent(latestHintIndex, accounts[0]);
+      console.log('Latest hint content:', hint); // Added log
+      
       setHintValue(hint);
+    } else {
+      console.log('No purchased hints found'); // Added log
     }
   } catch (error) {
-    console.error("Error loading purchased hints:", error);
+    console.error("Comprehensive error loading purchased hints:", error);
   }
 }, [jackpotContract, accounts, getHintContent]);
 
