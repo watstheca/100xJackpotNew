@@ -1,6 +1,7 @@
 [build]
-  command = "cd frontend && npm install --legacy-peer-deps && npm install react-scripts --save-dev && npm run build"
-  publish = "frontend/build"
+  base = "frontend"
+  command = "npm ci && npm run build"
+  publish = "build"
   functions = "functions"
 
 [[redirects]]
