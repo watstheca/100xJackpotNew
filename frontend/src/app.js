@@ -188,7 +188,7 @@ const loadPurchasedHints = useCallback(async () => {
     } finally {
       setIsLoading(false);
     }
-  }, ); // Add statusMessage as dependency
+  }, []); // Add statusMessage as dependency
 
   const buyTokens = async () => {
     if (!bondingCurveContract || !web3 || !accounts[0] || !numTokens) {
