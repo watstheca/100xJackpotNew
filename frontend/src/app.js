@@ -15,7 +15,6 @@ const App = () => {
   const [bondingCurveContract, setBondingCurveContract] = useState(null);
   
   const [currentGuess, setCurrentGuess] = useState('');
-  const [guessChance, setGuessChance] = useState('0');
   const [jackpotValue, setJackpotValue] = useState('0');
   const [hintValue, setHintValue] = useState('');
   const [liquidityValue, setLiquidityValue] = useState('0');
@@ -189,7 +188,7 @@ const loadPurchasedHints = useCallback(async () => {
     } finally {
       setIsLoading(false);
     }
-  }, []); // Add statusMessage as dependency
+  }, ); // Add statusMessage as dependency
 
   const buyTokens = async () => {
     if (!bondingCurveContract || !web3 || !accounts[0] || !numTokens) {
