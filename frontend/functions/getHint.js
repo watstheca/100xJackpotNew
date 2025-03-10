@@ -1,4 +1,4 @@
-const { ethers } = require('ethers');
+const ethers = require("ethers"); // No destructuring
 
 // JackpotGame ABI (only the function we need)
 const JACKPOT_ABI = [
