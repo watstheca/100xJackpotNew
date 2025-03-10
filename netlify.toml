@@ -1,0 +1,10 @@
+[build]
+  functions = "functions"
+
+[dev]
+  autoLaunch = false
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
