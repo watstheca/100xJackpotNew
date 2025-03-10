@@ -25,7 +25,6 @@ const App = () => {
   const [buySellMode, setBuySellMode] = useState('buy');
   const [hintCost, setHintCost] = useState('0');
   const [tokenBalance, setTokenBalance] = useState('0');
-  const [splits, setSplits] = useState([0, 0, 0, 0]);
   const [uniquePlayers, setUniquePlayers] = useState(0);
   const [totalWinners, setTotalWinners] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -619,35 +618,7 @@ const renderHintHistory = () => {
           </div>
         </section>
         
-        <section className="reward-split">
-          <h2 className="section-title">Reward Distribution</h2>
-          <div className="split-bars">
-            <div className="split-item">
-              <div className="split-bar">
-                <div className="bar-fill" style={{width: `${splits[0]}%`}}></div>
-              </div>
-              <p className="split-label">Winner: {splits[0]}%</p>
-            </div>
-            <div className="split-item">
-              <div className="split-bar">
-                <div className="bar-fill" style={{width: `${splits[1]}%`}}></div>
-              </div>
-              <p className="split-label">Bonus: {splits[1]}%</p>
-            </div>
-            <div className="split-item">
-              <div className="split-bar">
-                <div className="bar-fill" style={{width: `${splits[2]}%`}}></div>
-              </div>
-              <p className="split-label">Token Holders: {splits[2]}%</p>
-            </div>
-            <div className="split-item">
-              <div className="split-bar">
-                <div className="bar-fill" style={{width: `${splits[3]}%`}}></div>
-              </div>
-              <p className="split-label">Liquidity: {splits[3]}%</p>
-            </div>
-          </div>
-        </section>
+       
       </main>
       
       <footer className="app-footer">
