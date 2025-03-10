@@ -71,7 +71,7 @@ const App = () => {
     }
   };
 // Add this function to fetch hint content from the API
-const getHintContent = async (hintIndex, userAddress) => {
+const getHintContent = useCallback(async (hintIndex, userAddress) => {
   try {
     const response = await fetch(`/.netlify/functions/getHint?hintIndex=${hintIndex}&userAddress=${userAddress}`);
     
@@ -87,7 +87,7 @@ const getHintContent = async (hintIndex, userAddress) => {
     console.error("Error connecting to hint API:", error);
     return "Unable to connect to hint server";
   }
-};
+}, []); // Empty dependency array since it doesn't depend on external variables
 // Updated loadPurchasedHints function
 const loadPurchasedHints = useCallback(async () => {
   if (!jackpotContract || !accounts[0]) return;
@@ -96,138 +96,88 @@ const loadPurchasedHints = useCallback(async () => {
     const hintTotal = parseInt(await jackpotContract.methods.hintCount().call());
     let purchased = [];
     
-    // Check each hint
-    for (let i = 0; i < hintTotal; i++) {
-      try {
-        const hasAccess = await jackpotContract.methods.hasAccessToHint(accounts[0], i).call();
-        if (hasAccess) {
-          purchased.push(i);
-          
-          // Try to load from localStorage first
-          let hint = localStorage.getItem(`hint_${accounts[0]}_${i}`);
-          
-          // If not in localStorage, fetch from API
-          if (!hint) {
-            hint = await getHintContent(i, accounts[0]);
-            if (hint && !hint.startsWith("Error") && !hint.startsWith("Unable")) {
-              localStorage.setItem(`hint_${accounts[0]}_${i}`, hint);
-            }
-          }
-          
-          // If this is the most recent hint, display it
-          if (i === hintTotal - 1) {
-            setHintValue(hint || "Hint unavailable");
-          }
-        }
-      } catch (err) {
-        console.error(`Error checking hint access for hint ${i}:`, err);
-      }
-    }
+    // Concurrent hint access checks
+    const hintAccessPromises = Array.from({length: hintTotal}, async (_, i) => {
+      const hasAccess = await jackpotContract.methods.hasAccessToHint(accounts[0], i).call();
+      return hasAccess ? i : null;
+    });
     
+    const hintAccess = await Promise.all(hintAccessPromises);
+    
+    purchased = hintAccess.filter(index => index !== null);
     setPurchasedHints(purchased);
+    
+    // Set most recent hint if available
+    if (purchased.length > 0) {
+      const latestHintIndex = purchased[purchased.length - 1];
+      const hint = await getHintContent(latestHintIndex, accounts[0]);
+      setHintValue(hint);
+    }
   } catch (error) {
     console.error("Error loading purchased hints:", error);
   }
-}, [jackpotContract, accounts]);
+}, [jackpotContract, accounts, getHintContent]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const loadContractData = useCallback(async (web3, jackpot, token, bondingCurve, account) => {
     try {
       setIsLoading(true);
       setStatusMessage('Loading contract data...');
-
-      // Load token data
-      const tokenBalanceWei = await token.methods.balanceOf(account).call();
-      setTokenBalance(tokenBalanceWei);
-    
-      const tokenSupplyWei = await token.methods.totalSupply().call();
-      setTotalSupply(tokenSupplyWei);
+  
+      // Use Promise.all for concurrent calls
+      const [
+        tokenBalance,
+        tokenSupply,
+        jackpotValue,
+        nextJackpotValue,
+        guessCost,
+        hintCost,
+        totalWinners,
+        uniquePlayers
+      ] = await Promise.all([
+        token.methods.balanceOf(account).call(),
+        token.methods.totalSupply().call(),
+        jackpot.methods.jackpotAmount().call(),
+        jackpot.methods.nextJackpotAmount().call(),
+        jackpot.methods.guessCost().call(),
+        jackpot.methods.hintCost().call(),
+        jackpot.methods.totalWinners().call(),
+        jackpot.methods.uniquePlayers().call()
+      ]);
+  
+      // Simplified state updates with less formatting
+      setTokenBalance(tokenBalance);
+      setTotalSupply(tokenSupply);
       
-      // Load bonding curve data
+      // Simplified jackpot value handling
+      setJackpotValue(web3.utils.fromWei(jackpotValue, 'ether'));
+      setNextJackpotValue(web3.utils.fromWei(nextJackpotValue, 'ether'));
+      
+      // Direct conversion of token amounts
+      setGuessCost((window.BigInt(guessCost) / window.BigInt(10 ** 6)).toString());
+      setHintCost((window.BigInt(hintCost) / window.BigInt(10 ** 6)).toString());
+      
+      setTotalWinners(totalWinners);
+      setUniquePlayers(uniquePlayers);
+  
+      // Optional: Simplified bonding curve data (if needed)
       try {
         const poolInfo = await bondingCurve.methods.getPoolInfo().call();
-        const liquidityValueEth = web3.utils.fromWei(poolInfo.actualS, 'ether');
-        setLiquidityValue(liquidityValueEth);
-
+        setLiquidityValue(web3.utils.fromWei(poolInfo.actualS, 'ether'));
         const currentPriceWei = await bondingCurve.methods.getCurrentPrice().call();
-        const currentPriceEth = web3.utils.fromWei(currentPriceWei, 'ether');
-        setTokenPrice(currentPriceEth);
+        setTokenPrice(web3.utils.fromWei(currentPriceWei, 'ether'));
       } catch (err) {
-        console.error("Error loading bonding curve data:", err);
-        setLiquidityValue("N/A");
-        setTokenPrice("N/A");
-      }
-      
-      // Load jackpot data
-      try {
-        const jackpotValueWei = await jackpot.methods.jackpotAmount().call();
-        const jackpotValueS = web3.utils.fromWei(jackpotValueWei, 'ether');
-        
-        // Load existing next jackpot amount
-        const existingNextJackpotValueWei = await jackpot.methods.nextJackpotAmount().call();
-        const existingNextJackpotValueS = web3.utils.fromWei(existingNextJackpotValueWei, 'ether');
-        
-        // Calculate 90% current jackpot
-        const currentJackpotS = parseFloat(jackpotValueS) * 0.9;
-        
-        // Add 10% of current jackpot to existing next jackpot
-        const additionalNextJackpotS = parseFloat(jackpotValueS) * 0.1;
-        const totalNextJackpotS = parseFloat(existingNextJackpotValueS) + additionalNextJackpotS;
-        
-        // Custom formatting logic
-        const formatJackpot = (value) => {
-          if (value >= 1) {
-            return Math.round(value).toString();
-          } else {
-            return value.toFixed(2);
-          }
-        };
-        
-        setJackpotValue(formatJackpot(currentJackpotS));
-        setNextJackpotValue(formatJackpot(totalNextJackpotS));
-      } catch (err) {
-        console.error("Error loading jackpot data:", err);
-        setJackpotValue("N/A");
-        setNextJackpotValue("N/A");
+        console.warn("Bonding curve data fetch failed:", err);
       }
   
-      // Costs
-      try {
-        const guessCostWei = await jackpot.methods.guessCost().call();
-        const guessCostTokens = (window.BigInt(guessCostWei) / window.BigInt(10 ** 6)).toString();
-        setGuessCost(guessCostTokens);
-
-        const hintCostWei = await jackpot.methods.hintCost().call();
-        const hintCostTokens = (window.BigInt(hintCostWei) / window.BigInt(10 ** 6)).toString();
-        setHintCost(hintCostTokens);
-      } catch (err) {
-        console.error("Error loading cost data:", err);
-        setGuessCost("N/A");
-        setHintCost("N/A");
-      }
-      
-      // Stats
-      try {
-        const totalWinnerCount = await jackpot.methods.totalWinners().call();
-        setTotalWinners(totalWinnerCount);
-        
-        const uniquePlayerCount = await jackpot.methods.uniquePlayers().call();
-        setUniquePlayers(uniquePlayerCount);
-      } catch (err) {
-        console.error("Error loading stats:", err);
-      }
-      
-      // Load user's purchased hints
-      await loadPurchasedHints();
-      
-      setIsLoading(false);
       setStatusMessage('');
     } catch (error) {
-      console.error("Error loading contract data:", error);
-      setStatusMessage('Error loading data. Please check your connection.');
+      console.error("Contract data loading error:", error);
+      setStatusMessage('Error loading data. Check connection.');
+    } finally {
       setIsLoading(false);
     }
-  }, [loadPurchasedHints]);
+  }, []);
 
   const buyTokens = async () => {
     if (!bondingCurveContract || !web3 || !accounts[0] || !numTokens) {
@@ -468,49 +418,64 @@ const renderHintHistory = () => {
   );
 };
 
-  useEffect(() => {
-    const initWeb3 = async () => {
-      if (window.ethereum) {
-        try {
-          setStatusMessage('Connecting to blockchain...');
-          // Request account access
-          await window.ethereum.request({ method: 'eth_requestAccounts' });
-          const web3Instance = new Web3(window.ethereum);
-          setWeb3(web3Instance);
-          
-          // Get user accounts
-          const accts = await web3Instance.eth.getAccounts();
-          setAccounts(accts);
-          
-          // Initialize contracts
-          const jackpotInstance = new web3Instance.eth.Contract(JackpotGameABI.abi, JACKPOT_ADDRESS);
-          const tokenInstance = new web3Instance.eth.Contract(Token100xABI.abi, TOKEN_ADDRESS);
-          const bondingCurveInstance = new web3Instance.eth.Contract(BondingCurveABI.abi, BONDING_CURVE_ADDRESS);
-          
-          setJackpotContract(jackpotInstance);
-          setTokenContract(tokenInstance);
-          setBondingCurveContract(bondingCurveInstance);
-          
-          // Load initial data
-          await loadContractData(web3Instance, jackpotInstance, tokenInstance, bondingCurveInstance, accts[0]);
-        } catch (error) {
-          console.error("User denied account access or error occurred:", error);
-          setStatusMessage('Error connecting to wallet. Please check MetaMask.');
+useEffect(() => {
+  const initWeb3 = async () => {
+    if (window.ethereum) {
+      try {
+        setStatusMessage('Connecting to blockchain...');
+        
+        // Request account access with timeout
+        const accounts = await Promise.race([
+          window.ethereum.request({ method: 'eth_requestAccounts' }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Connection timeout')), 10000)
+          )
+        ]);
+
+        if (accounts.length === 0) {
+          setStatusMessage('Please connect your wallet');
+          return;
         }
-      } else {
-        setStatusMessage('Please install MetaMask to use this application.');
-        console.log('Please install MetaMask!');
+
+        const web3Instance = new Web3(window.ethereum);
+        
+        // Initialize contracts with minimal information first
+        const jackpotInstance = new web3Instance.eth.Contract(JackpotGameABI.abi, JACKPOT_ADDRESS);
+        const tokenInstance = new web3Instance.eth.Contract(Token100xABI.abi, TOKEN_ADDRESS);
+        const bondingCurveInstance = new web3Instance.eth.Contract(BondingCurveABI.abi, BONDING_CURVE_ADDRESS);
+        
+        // Set initial state
+        setWeb3(web3Instance);
+        setAccounts(accounts);
+        setJackpotContract(jackpotInstance);
+        setTokenContract(tokenInstance);
+        setBondingCurveContract(bondingCurveInstance);
+
+        // Load contract data
+        await loadContractData(web3Instance, jackpotInstance, tokenInstance, bondingCurveInstance, accounts[0]);
+      } catch (error) {
+        console.error("Web3 initialization error:", error);
+        setStatusMessage(`Connection failed: ${error.message}`);
       }
-    };
-    
-    initWeb3();
-  }, [JACKPOT_ADDRESS, TOKEN_ADDRESS, BONDING_CURVE_ADDRESS, loadContractData]);
+    } else {
+      setStatusMessage('Please install a Web3 wallet like MetaMask');
+    }
+  };
+  
+  initWeb3();
+}, [JACKPOT_ADDRESS, TOKEN_ADDRESS, BONDING_CURVE_ADDRESS, loadContractData]);
 
   useEffect(() => {
     if (currentGuess && jackpotContract && web3 && accounts[0]) {
       calculateGuessChance();
     }
   }, [currentGuess, jackpotContract, web3, accounts, calculateGuessChance]);
+
+  useEffect(() => {
+    if (jackpotContract && accounts.length > 0) {
+      loadPurchasedHints();
+    }
+  }, [jackpotContract, accounts, loadPurchasedHints]);
 
   return (
     <div className="app-container">
