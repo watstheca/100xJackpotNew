@@ -536,8 +536,8 @@ useEffect(() => {
           <div className="jackpot-info">
             <p className="info-item">Current Jackpot: {jackpotValue} S</p>
             <p className="info-item">Next Jackpot: {nextJackpotValue} S</p>
-            <p className="info-item">Guess Cost: {guessCost} 100X</p>
-            <p className="info-item">Hint Cost: {hintCost} 100X</p>
+            <p className="info-item">Guess Cost: {guessCost} 100x</p>
+            <p className="info-item">Hint Cost: {hintCost} 100x</p>
             <p className="info-item">Unique Players: {uniquePlayers}</p>
             <p className="info-item">Total Winners: {totalWinners}</p>
           </div>
@@ -568,7 +568,6 @@ useEffect(() => {
             >
               Buy Hint
             </button>
-            {hintValue && <p className="hint-value">Hint: {hintValue}</p>}
             {renderHintHistory()}
           </div>
         </section>
