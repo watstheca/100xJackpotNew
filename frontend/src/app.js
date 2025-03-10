@@ -121,18 +121,18 @@ const loadPurchasedHints = useCallback(async () => {
   const loadContractData = useCallback(async (web3, jackpot, token, bondingCurve, account) => {
     try {
       setIsLoading(true);
-          
-    // Save the current message if it's important (contains certain keywords)
-    const currentMessage = statusMessage;
-    const isImportantMessage = currentMessage.includes('CONGRATULATIONS') || 
-                              currentMessage.includes('correct') ||
-                              currentMessage.includes('incorrect');
+      
+      // Use functional update to avoid direct dependency on statusMessage
+      setStatusMessage(prevMessage => {
+        const isImportantMessage = 
+          prevMessage.includes('CONGRATULATIONS') || 
+          prevMessage.includes('correct') ||
+          prevMessage.includes('incorrect');
+        
+        return isImportantMessage ? prevMessage : 'Loading contract data...';
+      });
     
-    if (!isImportantMessage) {
-      setStatusMessage('Loading contract data...');
-    }
-  
-      // Use Promise.all for concurrent calls
+      // Existing contract data loading logic
       const [
         tokenBalance,
         tokenSupply,
@@ -153,22 +153,19 @@ const loadPurchasedHints = useCallback(async () => {
         jackpot.methods.uniquePlayers().call()
       ]);
   
-      // Simplified state updates with less formatting
+      // Existing state updates
       setTokenBalance(tokenBalance);
       setTotalSupply(tokenSupply);
-      
-      // Simplified jackpot value handling
       setJackpotValue(web3.utils.fromWei(jackpotValue, 'ether'));
       setNextJackpotValue(web3.utils.fromWei(nextJackpotValue, 'ether'));
       
-      // Direct conversion of token amounts
       setGuessCost((window.BigInt(guessCost) / window.BigInt(10 ** 6)).toString());
       setHintCost((window.BigInt(hintCost) / window.BigInt(10 ** 6)).toString());
       
       setTotalWinners(totalWinners);
       setUniquePlayers(uniquePlayers);
   
-      // Optional: Simplified bonding curve data (if needed)
+      // Optional bonding curve data
       try {
         const poolInfo = await bondingCurve.methods.getPoolInfo().call();
         setLiquidityValue(web3.utils.fromWei(poolInfo.actualS, 'ether'));
@@ -177,18 +174,24 @@ const loadPurchasedHints = useCallback(async () => {
       } catch (err) {
         console.warn("Bonding curve data fetch failed:", err);
       }
-      if (isImportantMessage) {
-        setStatusMessage(currentMessage);
-      } else {
-        setStatusMessage('');
-      }
+  
+      // Reset status message if not an important message
+      setStatusMessage(prevMessage => {
+        const isImportantMessage = 
+          prevMessage.includes('CONGRATULATIONS') || 
+          prevMessage.includes('correct') ||
+          prevMessage.includes('incorrect');
+        
+        return isImportantMessage ? prevMessage : '';
+      });
+  
     } catch (error) {
       console.error("Contract data loading error:", error);
       setStatusMessage('Error loading data. Check connection.');
     } finally {
       setIsLoading(false);
     }
-  }, []); // Add statusMessage as dependency
+  }, []); // Empty dependency array
 
   const buyTokens = async () => {
     if (!bondingCurveContract || !web3 || !accounts[0] || !numTokens) {
