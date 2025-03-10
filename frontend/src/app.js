@@ -96,53 +96,51 @@ const getHintContent = useCallback(async (hintIndex, userAddress) => {
 // Updated loadPurchasedHints function
 const loadPurchasedHints = useCallback(async () => {
   if (!jackpotContract || !accounts[0]) {
-    console.log('Skipping hint load: No contract or account'); // Added log
+    console.log('Skipping hint load: No contract or account');
     return;
   }
-  
+
   try {
-    console.log('Loading purchased hints for account:', accounts[0]); // Added log
+    console.log('Loading purchased hints for account:', accounts[0]);
     
     const hintTotal = parseInt(await jackpotContract.methods.hintCount().call());
-    console.log('Total hints available:', hintTotal); // Added log
-    
+    console.log('Total hints available:', hintTotal);
+
     let purchased = [];
-    
+    let hintsData = {}; // Store hints
+
     // Concurrent hint access checks
-    const hintAccessPromises = Array.from({length: hintTotal}, async (_, i) => {
+    const hintAccessPromises = Array.from({ length: hintTotal }, async (_, i) => {
       try {
         const hasAccess = await jackpotContract.methods.hasAccessToHint(accounts[0], i).call();
-        console.log(`Hint ${i} access:`, hasAccess); // Added detailed log
-        return hasAccess ? i : null;
-      } catch (accessError) {
-        console.error(`Error checking access for hint ${i}:`, accessError);
+        if (hasAccess) {
+          const hint = await getHintContent(i, accounts[0]);
+          hintsData[i] = hint;
+          return i;
+        }
+        return null;
+      } catch (error) {
+        console.error(`Error checking access for hint ${i}:`, error);
         return null;
       }
     });
-    
+
     const hintAccess = await Promise.all(hintAccessPromises);
-    
     purchased = hintAccess.filter(index => index !== null);
-    console.log('Purchased hint indices:', purchased); // Added log
-    
+
+    console.log('Purchased hint indices:', purchased);
+    console.log('Hints data:', hintsData);
+
     setPurchasedHints(purchased);
+    setHintValue(hintsData[purchased[purchased.length - 1]] || "No hints available");
     
-    // Set most recent hint if available
-    if (purchased.length > 0) {
-      const latestHintIndex = purchased[purchased.length - 1];
-      console.log('Fetching latest hint index:', latestHintIndex); // Added log
-      
-      const hint = await getHintContent(latestHintIndex, accounts[0]);
-      console.log('Latest hint content:', hint); // Added log
-      
-      setHintValue(hint);
-    } else {
-      console.log('No purchased hints found'); // Added log
-    }
+    // Store hints for UI rendering
+    setHintsLoaded(hintsData);
   } catch (error) {
     console.error("Comprehensive error loading purchased hints:", error);
   }
 }, [jackpotContract, accounts, getHintContent]);
+
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const loadContractData = useCallback(async (web3, jackpot, token, bondingCurve, account) => {
@@ -448,25 +446,22 @@ const loadPurchasedHints = useCallback(async () => {
 // Updated renderHintHistory function
 const renderHintHistory = () => {
   if (purchasedHints.length === 0) return null;
-  
+
   return (
     <div className="hint-history">
       <h3>Your Purchased Hints</h3>
       <ul>
-        {purchasedHints.map(index => {
-          const hintKey = `hint_${accounts[0]}_${index}`;
-          const hintContent = localStorage.getItem(hintKey) || "Loading hint...";
-          
-          return (
-            <li key={index} className="hint-item">
-              <span className="hint-number">Hint #{index + 1}:</span> {hintContent}
-            </li>
-          );
-        })}
+        {purchasedHints.map(index => (
+          <li key={index} className="hint-item">
+            <span className="hint-number">Hint #{index + 1}:</span> 
+            {hintsLoaded[index] || "Loading..."}
+          </li>
+        ))}
       </ul>
     </div>
   );
 };
+
 
 useEffect(() => {
   const initWeb3 = async () => {
