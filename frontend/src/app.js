@@ -628,7 +628,7 @@ useEffect(() => {
       </main>
       
       <footer className="app-footer">
-        <p>DeFAI Hackathon Project - Sonic Chain - 2024</p>
+        <p>DeFAI Hackathon Project - Sonic Chain - 2025</p>
       </footer>
     </div>
   );

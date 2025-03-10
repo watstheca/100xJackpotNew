@@ -1,6 +1,6 @@
 [build]
   base = "frontend"
-  command = "npm ci && npm run build"
+  command = "CI=false npm ci && npm run build"
   publish = "build" 
   functions = "functions"
 
